@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>食材マスタ登録(物流)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      font-size: 13px;
+      color: #333333;
+      background-color: #f2f2f2;
+      user-select: none;
+    }
+
+    /* Modal Overlay Backdrop */
+    .modal-overlay {
+      background-color: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(1px);
+    }
+
+    /* Standardized Form Input Heights & Styling */
+    .custom-input {
+      border: 1px solid #c4c4c4;
+      border-radius: 2px;
+      padding: 3px 6px;
+      height: 26px;
+      outline: none;
+      background-color: #ffffff;
+      font-size: 12px;
+    }
+    .custom-input:focus {
+      border-color: #17a2b8;
+      box-shadow: 0 0 0 1px rgba(23, 162, 184, 0.25);
+    }
+    .custom-input-readonly {
+      background-color: #e9ecef;
+      border: 1px solid #ced4da;
+      color: #495057;
+    }
+
+    /* Custom Scrollbar for Dropdowns and Tables */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    /* Dropdown Hover State */
+    .dropdown-item-hover:hover {
+      background-color: #e8f4f8;
+      color: #000;
+    }
+
+    /* Custom Table Styling */
+    .master-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+    }
+    .master-table th {
+      background-color: #e0f2f1;
+      border-bottom: 1px solid #b2dfdb;
+      border-right: 1px solid #b2dfdb;
+      padding: 6px 8px;
+      font-weight: normal;
+      color: #333;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .master-table td {
+      border-bottom: 1px solid #e0e0e0;
+      border-right: 1px solid #e0e0e0;
+      padding: 5px 8px;
+      background-color: #ffffff;
+      font-size: 12px;
+    }
+    .master-table tr:hover td {
+      background-color: #f5f9fa;
+    }
+
+    /* Soft Button Hover Effects */
+    .btn-action-primary {
+      background-color: #4dd0e1;
+      color: #ffffff;
+      border-radius: 3px;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-action-primary:hover {
+      background-color: #26c6da;
+    }
+
+    .btn-action-secondary {
+      background-color: #17a2b8;
+      color: #ffffff;
+      border-radius: 3px;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-action-secondary:hover {
+      background-color: #138496;
+    }
+
+    .btn-csv {
+      background-color: #4cd3a8;
+      color: #ffffff;
+      border-radius: 8px;
+      transition: background-color 0.15s ease;
+    }
+    .btn-csv:hover {
+      background-color: #3dbd94;
+    }
+
+    .btn-cancel {
+      background-color: #42cbf5;
+      color: #ffffff;
+      border-radius: 8px;
+      transition: background-color 0.15s ease;
+    }
+    .btn-cancel:hover {
+      background-color: #2fb5df;
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col justify-between overflow-hidden">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-white border-b border-gray-300 px-4 py-2 flex items-center justify-between h-12 shrink-0">
+    <div class="flex items-center space-x-4">
+      <button class="w-8 h-8 bg-[#17a2b8] hover:bg-[#138496] text-white rounded flex items-center justify-center transition-colors">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+      <div class="flex items-center space-x-6">
+        <span class="text-gray-600 text-sm">2026/09/30(水)</span>
+        <h1 class="text-base font-bold text-gray-700 tracking-wide">食材マスタ登録(物流)</h1>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-3">
+      <!-- 業態選択ボタン (Triggers Modal Popup) -->
+      <button id="btnOpenModal" class="bg-[#17a2b8] hover:bg-[#138496] text-white font-medium px-3 py-1 rounded border border-[#138496] shadow-sm flex items-center space-x-1 transition-colors">
+        <i class="fa-solid fa-store text-xs"></i>
+        <span>業態選択</span>
+      </button>
+
+      <!-- User Selector Dropdown -->
+      <div class="relative">
+        <select class="border border-[#17a2b8] text-gray-700 rounded px-3 py-1 pr-8 bg-white focus:outline-none appearance-none cursor-pointer text-xs">
+          <option>谷口 正樹さん</option>
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-[#17a2b8]">
+          <i class="fa-solid fa-caret-down"></i>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace Area -->
+  <main class="flex-1 p-4 overflow-y-auto bg-[#f8f9fa] flex flex-col space-y-4">
+    
+    <!-- Top Readonly Ingredient Header Details -->
+    <div class="grid grid-cols-1 md:grid-cols-[100px_1fr] gap-x-4 gap-y-1.5 max-w-xl text-xs">
+      <div class="text-gray-600 flex items-center">食材コード</div>
+      <div><span class="inline-block bg-[#e9ecef] border border-gray-300 rounded px-2 py-0.5 text-gray-800 w-32">010153</span></div>
+
+      <div class="text-gray-600 flex items-center">食材名称</div>
+      <div><span class="inline-block bg-[#e9ecef] border border-gray-300 rounded px-2 py-0.5 text-gray-800 w-full h-6"></span></div>
+
+      <div class="text-gray-600 flex items-center">食材略称</div>
+      <div><span class="inline-block bg-[#e9ecef] border border-gray-300 rounded px-2 py-0.5 text-gray-800 w-64">玉子（パック）</span></div>
+
+      <div class="text-gray-600 flex items-center">食材カナ名</div>
+      <div><span class="inline-block bg-[#e9ecef] border border-gray-300 rounded px-2 py-0.5 text-gray-800 w-64">タマゴ (パック)</span></div>
+    </div>
+
+    <!-- Middle Form Control Section -->
+    <div class="flex border border-gray-300 rounded bg-white shadow-sm overflow-hidden max-w-4xl">
+      <!-- Left Colored Labels Panel -->
+      <div class="bg-[#e0f2f1] w-36 py-2 px-3 border-r border-[#b2dfdb] flex flex-col justify-between space-y-2 text-xs font-medium">
+        <div class="h-6 flex items-center text-gray-700">未使用</div>
+        <div class="h-6 flex items-center text-red-600 font-semibold">納品開始日</div>
+        <div class="h-6 flex items-center text-red-600 font-semibold">発注グループ</div>
+        <div class="h-6 flex items-center text-red-600 font-semibold">食材グループ</div>
+        <div class="h-6 flex items-center text-red-600 font-semibold">品目分類コード</div>
+        <div class="h-6 flex items-center text-red-600 font-semibold">発注方式コード</div>
+        <div class="h-6 flex items-center text-gray-700">メーカー</div>
+      </div>
+
+      <!-- Right Inputs Panel -->
+      <div class="p-2 flex-1 flex flex-col justify-between space-y-2">
+        <!-- Unused Checkbox -->
+        <div class="h-6 flex items-center">
+          <input type="checkbox" class="w-4 h-4 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+        </div>
+
+        <!-- Delivery Start Date -->
+        <div class="h-6 flex items-center space-x-2">
+          <input type="text" value="2026/09/30" class="custom-input w-32">
+          <button class="text-gray-500 hover:text-gray-700">
+            <i class="fa-regular fa-calendar-days text-base"></i>
+          </button>
+        </div>
+
+        <!-- Order Group Search -->
+        <div class="h-6 flex items-center space-x-2">
+          <input type="text" class="custom-input w-80">
+          <button class="btn-action-primary px-3 py-1 text-xs font-medium flex items-center space-x-1">
+            <span>検索</span>
+          </button>
+        </div>
+
+        <!-- Ingredient Group Dropdown -->
+        <div class="h-6 flex items-center">
+          <select class="custom-input w-64">
+            <option>工場毎日品</option>
+            <option>サラダ</option>
+          </select>
+        </div>
+
+        <!-- Category Code -->
+        <div class="h-6 flex items-center">
+          <input type="text" value="001" class="custom-input w-24">
+        </div>
+
+        <!-- Order Method Code -->
+        <div class="h-6 flex items-center">
+          <input type="text" value="10" class="custom-input w-24">
+        </div>
+
+        <!-- Manufacturer -->
+        <div class="h-6 flex items-center">
+          <input type="text" class="custom-input w-48">
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons for Form Editing -->
+    <div class="flex items-center space-x-2 pl-36">
+      <button class="btn-action-primary px-5 py-1 text-xs">クリア</button>
+      <button class="btn-action-primary px-5 py-1 text-xs">追加</button>
+      <button class="btn-action-primary px-5 py-1 text-xs">上書き</button>
+      <!-- 配信設定ボタン -->
+      <button id="btnOpenDeliveryModal" class="btn-action-secondary px-4 py-1 text-xs font-medium shadow-sm flex items-center space-x-1">
+        <i class="fa-solid fa-gear text-2xs"></i>
+        <span>配信設定</span>
+      </button>
+    </div>
+
+    <!-- Bottom Records Data Table -->
+    <div class="flex-1 border border-gray-300 rounded bg-white shadow-sm overflow-auto min-h-[160px]">
+      <table class="master-table">
+        <thead>
+          <tr>
+            <th class="w-12 text-center">未使用</th>
+            <th class="w-28 text-left">納品開始日</th>
+            <th class="text-left">発注グループ</th>
+            <th class="w-16 text-center"></th>
+            <th class="w-32 text-left">食材グループ</th>
+            <th class="w-28 text-left">品目分類コード</th>
+            <th class="w-28 text-left">発注方式コード</th>
+            <th class="w-28 text-left">メーカー</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-center"><input type="checkbox"></td>
+            <td>20200101</td>
+            <td class="truncate max-w-xs" title="ＴＴ福生,ＴＴ立川幸町,ＴＴ川崎神木,ＴＴ鶴川,ＴＴ花小金井,ＴＴ下高井戸,ＴＴ新所沢,ＴＴ鎌倉由比ヶ浜…">
+              ＴＴ福生,ＴＴ立川幸町,ＴＴ川崎神木,ＴＴ鶴川,ＴＴ花小金井,ＴＴ下高井戸,ＴＴ新所沢,ＴＴ鎌倉由比ヶ浜…
+            </td>
+            <td class="text-center">
+              <button class="btn-action-primary px-2 py-0.5 text-xs">参照</button>
+            </td>
+            <td>工場毎日品</td>
+            <td>001</td>
+            <td>10</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td class="text-center"><input type="checkbox"></td>
+            <td>20200101</td>
+            <td>ＣＦららぽーと豊洲</td>
+            <td class="text-center">
+              <button class="btn-action-primary px-2 py-0.5 text-xs">参照</button>
+            </td>
+            <td>サラダ</td>
+            <td>1</td>
+            <td>33</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- Bottom Footer Bar -->
+  <footer class="bg-[#597d83] px-6 py-2.5 flex justify-end items-center space-x-3 shrink-0 shadow-inner">
+    <button class="px-6 py-1.5 rounded-full border border-white text-white text-xs hover:bg-white/10 transition-colors">
+      一覧に戻る
+    </button>
+    <button class="px-8 py-1.5 rounded-full border border-white text-white text-xs bg-white/20 font-bold hover:bg-white/30 transition-colors">
+      登録
+    </button>
+  </footer>
+
+  <!-- MODAL 1: Output Conditions Dialog (出力条件) -->
+  <div id="outputModal" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4 hidden">
+    <!-- Modal Window Container -->
+    <div class="bg-white rounded-md shadow-2xl w-[480px] border border-gray-300 overflow-hidden transform transition-all">
+      
+      <!-- Modal Header -->
+      <div class="bg-white px-4 py-2.5 border-b border-gray-200 flex justify-between items-center">
+        <h2 class="text-base font-bold text-gray-800 tracking-tight">出力条件</h2>
+        <button id="btnCloseModal" class="text-gray-400 hover:text-gray-600 text-xl leading-none px-1">
+          &times;
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 pb-12 relative min-h-[180px]">
+        
+        <!-- Business Type Select Row -->
+        <div class="flex items-center space-x-3 mb-8">
+          <label class="text-sm font-medium text-gray-700 whitespace-nowrap">業態 ：</label>
+          
+          <!-- Custom Select Box Container -->
+          <div class="relative flex-1">
+            <button id="dropdownToggleBtn" class="w-full border border-gray-300 rounded px-3 py-1.5 bg-white text-left text-sm flex justify-between items-center focus:outline-none focus:border-cyan-500 shadow-sm">
+              <span id="selectedBusinessTypeText" class="text-gray-800">売店</span>
+              <i class="fa-solid fa-caret-down text-gray-400 text-xs"></i>
+            </button>
+
+            <!-- Dropdown Popover List -->
+            <div id="dropdownList" class="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded shadow-lg z-20 overflow-hidden hidden">
+              <!-- Search Input Area inside Dropdown -->
+              <div class="p-1.5 border-b border-gray-200 relative bg-white">
+                <input id="dropdownSearchInput" type="text" class="w-full border border-gray-300 rounded px-2 py-1 pr-7 text-xs focus:outline-none focus:border-cyan-500" placeholder="">
+                <i class="fa-solid fa-magnifying-glass absolute right-3 top-2.5 text-gray-400 text-xs"></i>
+              </div>
+
+              <!-- List Items Container -->
+              <div id="businessTypeList" class="max-h-48 overflow-y-auto text-xs py-1">
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">売店</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">TT 魚屋路</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">GT ガスト</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">GG グラッチェガーデンズ</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">ST ステーキガスト</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">HR 八郎そば</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">YC 桃菜</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">TN 點心甜心</div>
+                <div class="dropdown-item px-3 py-1.5 cursor-pointer dropdown-item-hover text-gray-800">PT 包包點心</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer Action Buttons -->
+        <div class="flex justify-center space-x-4 mt-6">
+          <button id="btnExportCsv" class="btn-csv px-8 py-2.5 text-white font-medium text-sm shadow-md tracking-wider flex items-center justify-center min-w-[130px]">
+            選択
+          </button>
+          <button id="btnCancelModal" class="btn-cancel px-8 py-2.5 text-white font-medium text-sm shadow-md tracking-wider flex items-center justify-center min-w-[130px]">
+            キャンセル
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL 2: Delivery Settings Dialog (配信設定) -->
+  <div id="deliveryModal" class="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4 hidden">
+    <!-- Modal Window Container (横幅を580pxに拡張し縦スクロール制御を追加) -->
+    <div class="bg-white rounded-md shadow-2xl w-[580px] max-h-[90vh] border border-gray-300 overflow-hidden flex flex-col transform transition-all">
+      
+      <!-- Modal Header -->
+      <div class="bg-white px-4 py-2.5 border-b border-gray-200 flex justify-between items-center shrink-0">
+        <h2 class="text-base font-bold text-gray-800 tracking-tight">配信設定</h2>
+        <button id="btnCloseDeliveryModal" class="text-gray-400 hover:text-gray-600 text-xl leading-none px-1">
+          &times;
+        </button>
+      </div>
+
+      <!-- Modal Body (スクロール可能) -->
+      <div class="p-5 text-xs text-gray-700 space-y-3.5 overflow-y-auto flex-1">
+        
+        <!-- 発注開始日 -->
+        <div class="flex items-center">
+          <div class="w-28 font-medium text-gray-700 shrink-0">発注開始日：</div>
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+              <span>今日</span>
+            </label>
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+              <span>明日</span>
+            </label>
+            <div class="flex items-center space-x-1">
+              <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+                <span>その他</span>
+              </label>
+              <div class="flex items-center space-x-1 ml-1">
+                <input type="text" placeholder="YYYY/MM/DD" class="custom-input w-28">
+                <button class="text-gray-500 hover:text-gray-700">
+                  <i class="fa-regular fa-calendar-days text-sm"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 発注終了日 -->
+        <div class="flex items-center">
+          <div class="w-28 font-medium text-gray-700 shrink-0">発注終了日：</div>
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+              <span>今日</span>
+            </label>
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+              <span>昨日</span>
+            </label>
+            <div class="flex items-center space-x-1">
+              <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+                <span>その他</span>
+              </label>
+              <div class="flex items-center space-x-1 ml-1">
+                <input type="text" placeholder="YYYY/MM/DD" class="custom-input w-28">
+                <button class="text-gray-500 hover:text-gray-700">
+                  <i class="fa-regular fa-calendar-days text-sm"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 方式コード -->
+        <div class="flex items-center">
+          <div class="w-28 font-medium text-gray-700 shrink-0">方式コード：</div>
+          <div>
+            <input type="text" class="custom-input w-48" placeholder="方式コードを入力">
+          </div>
+        </div>
+
+        <!-- 品目分類コード -->
+        <div class="flex items-center">
+          <div class="w-28 font-medium text-gray-700 shrink-0">品目分類コード：</div>
+          <div>
+            <input type="text" class="custom-input w-48" placeholder="品目分類コードを入力">
+          </div>
+        </div>
+
+        <!-- メーカーコード -->
+        <div class="flex items-start pt-0.5">
+          <div class="w-28 font-medium text-gray-700 pt-1 shrink-0">メーカーコード：</div>
+          <div class="flex-1 space-y-2">
+            <div class="flex items-center space-x-4">
+              <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+                <span>食器</span>
+              </label>
+              <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+                <span>ユニフォーム</span>
+              </label>
+              <label class="flex items-center space-x-1 cursor-pointer">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+                <span>日酒販</span>
+              </label>
+            </div>
+            <div class="flex items-center space-x-2">
+              <label class="flex items-center space-x-1 cursor-pointer shrink-0">
+                <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300 text-[#17a2b8] focus:ring-[#17a2b8]">
+                <span>その他</span>
+              </label>
+              <input type="text" class="custom-input w-48" placeholder="メーカーコードを入力">
+            </div>
+          </div>
+        </div>
+
+        <!-- 区切り線 -->
+        <hr class="border-gray-200 my-2">
+
+        <!-- 追加：対象品目 貼り付けエリア -->
+        <div class="flex items-start">
+          <div class="w-28 font-medium text-gray-700 pt-1 shrink-0">
+            <span>対象品目：</span>
+            <span class="block text-3xs text-gray-400 font-normal">（改行またはカンマ区切り）</span>
+          </div>
+          <div class="flex-1">
+            <textarea class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none focus:border-[#17a2b8] focus:ring-1 focus:ring-[#17a2b8] h-20 resize-y" placeholder="品目コードを貼り付けてください"></textarea>
+          </div>
+        </div>
+
+        <!-- 追加：対象店舗 貼り付けエリア -->
+        <div class="flex items-start">
+          <div class="w-28 font-medium text-gray-700 pt-1 shrink-0">
+            <span>対象店舗：</span>
+            <span class="block text-3xs text-gray-400 font-normal">（改行またはカンマ区切り）</span>
+          </div>
+          <div class="flex-1">
+            <textarea class="w-full border border-gray-300 rounded p-1.5 text-xs outline-none focus:border-[#17a2b8] focus:ring-1 focus:ring-[#17a2b8] h-20 resize-y" placeholder="店舗コードまたは店舗名を貼り付けてください"></textarea>
+          </div>
+        </div>
+
+        <!-- Modal Footer Action Buttons -->
+        <div class="flex justify-center space-x-4 pt-4 border-t border-gray-200 mt-4 shrink-0">
+          <button id="btnSaveDeliveryModal" class="btn-csv px-8 py-2 text-white font-medium text-xs shadow-md tracking-wider flex items-center justify-center min-w-[110px]">
+            設定
+          </button>
+          <button id="btnCancelDeliveryModal" class="btn-cancel px-8 py-2 text-white font-medium text-xs shadow-md tracking-wider flex items-center justify-center min-w-[110px]">
+            キャンセル
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- モーダル1: 業態選択 ---
+    const outputModal = document.getElementById('outputModal');
+    const btnOpenModal = document.getElementById('btnOpenModal');
+    const btnCloseModal = document.getElementById('btnCloseModal');
+    const btnCancelModal = document.getElementById('btnCancelModal');
+    const btnExportCsv = document.getElementById('btnExportCsv');
+
+    const dropdownToggleBtn = document.getElementById('dropdownToggleBtn');
+    const dropdownList = document.getElementById('dropdownList');
+    const dropdownSearchInput = document.getElementById('dropdownSearchInput');
+    const selectedBusinessTypeText = document.getElementById('selectedBusinessTypeText');
+    const dropdownItems = document.querySelectorAll('.dropdown-item');
+
+    btnOpenModal.addEventListener('click', () => {
+      outputModal.classList.remove('hidden');
+    });
+
+    const closeModal = () => {
+      outputModal.classList.add('hidden');
+      dropdownList.classList.add('hidden');
+    };
+
+    btnCloseModal.addEventListener('click', closeModal);
+    btnCancelModal.addEventListener('click', closeModal);
+
+    btnExportCsv.addEventListener('click', () => {
+      const selectedType = selectedBusinessTypeText.textContent;
+      closeModal();
+    });
+
+    dropdownToggleBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdownList.classList.toggle('hidden');
+      if (!dropdownList.classList.contains('hidden')) {
+        dropdownSearchInput.focus();
+      }
+    });
+
+    dropdownItems.forEach(item => {
+      item.addEventListener('click', () => {
+        selectedBusinessTypeText.textContent = item.textContent.trim();
+        dropdownList.classList.add('hidden');
+      });
+    });
+
+    dropdownSearchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      dropdownItems.forEach(item => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(query)) {
+          item.style.display = 'block';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+
+    // --- モーダル2: 配信設定 ---
+    const deliveryModal = document.getElementById('deliveryModal');
+    const btnOpenDeliveryModal = document.getElementById('btnOpenDeliveryModal');
+    const btnCloseDeliveryModal = document.getElementById('btnCloseDeliveryModal');
+    const btnCancelDeliveryModal = document.getElementById('btnCancelDeliveryModal');
+    const btnSaveDeliveryModal = document.getElementById('btnSaveDeliveryModal');
+
+    btnOpenDeliveryModal.addEventListener('click', () => {
+      deliveryModal.classList.remove('hidden');
+    });
+
+    const closeDeliveryModal = () => {
+      deliveryModal.classList.add('hidden');
+    };
+
+    btnCloseDeliveryModal.addEventListener('click', closeDeliveryModal);
+    btnCancelDeliveryModal.addEventListener('click', closeDeliveryModal);
+    btnSaveDeliveryModal.addEventListener('click', closeDeliveryModal);
+
+    // ドロップダウン外クリック時の非表示制御
+    document.addEventListener('click', (e) => {
+      if (!dropdownToggleBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+        dropdownList.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
